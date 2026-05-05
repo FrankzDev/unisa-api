@@ -1,235 +1,273 @@
-# 🏠 Unisa API Proxy
+<div align="center">
 
-Backend proxy serverless construido en Vercel para conectar Webflow con la API de Domus de forma segura, escalable y optimizada.
+<br/>
 
-Este proyecto actúa como una capa intermedia que protege credenciales, normaliza datos y expone endpoints listos para consumo desde frontend (Webflow).
+```
+██╗   ██╗███╗   ██╗██╗███████╗ █████╗      █████╗ ██████╗ ██╗
+██║   ██║████╗  ██║██║██╔════╝██╔══██╗    ██╔══██╗██╔══██╗██║
+██║   ██║██╔██╗ ██║██║███████╗███████║    ███████║██████╔╝██║
+██║   ██║██║╚██╗██║██║╚════██║██╔══██║    ██╔══██║██╔═══╝ ██║
+╚██████╔╝██║ ╚████║██║███████║██║  ██║    ██║  ██║██║     ██║
+ ╚═════╝ ╚═╝  ╚═══╝╚═╝╚══════╝╚═╝  ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝
+```
+
+**Serverless proxy API for modern real estate platforms in Colombia**
+
+[![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-000000?style=flat-square&logo=vercel)](https://unisa-api.vercel.app/)
+[![Node.js](https://img.shields.io/badge/Node.js-Serverless-339933?style=flat-square&logo=node.js)](https://nodejs.org/)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
+[![Status](https://img.shields.io/badge/Status-Production-brightgreen?style=flat-square)]()
+[![Colombia](https://img.shields.io/badge/Market-Colombia%20🇨🇴-yellow?style=flat-square)]()
+
+<br/>
+
+**[🌐 Live API](https://unisa-api.vercel.app/)** · **[📖 Docs](#-endpoints)** · **[🚀 Deploy](#-deploy)**
+
+<br/>
+
+</div>
 
 ---
 
-# 🌐 Base URL
+## 🧠 What is UNISA API?
+
+UNISA API is a **serverless proxy layer** (Backend for Frontend) built with Node.js and deployed on Vercel. It sits between your frontend and the DOMUS backend, acting as a secure, optimized gateway for real estate data in Colombia.
 
 ```
-https://tu-proyecto.vercel.app/api
+   Your Frontend         UNISA API              DOMUS Backend
+  ┌───────────┐        ┌──────────────┐        ┌─────────────┐
+  │  React /  │  HTTP  │  Vercel      │  HTTP  │  Private    │
+  │  Next.js  │ ──────▶│  Serverless  │ ──────▶│  DOMUS API  │
+  │  Webflow  │        │  Functions   │        │             │
+  └───────────┘        └──────────────┘        └─────────────┘
+        ▲                     │
+        │   Clean JSON resp.  │  🔐 API Key never exposed
+        └─────────────────────┘
+```
+
+**Why use it?**
+
+- 🔐 **API keys stay server-side** — never exposed to the browser
+- ⚡ **Standardized responses** — consistent JSON structure across all endpoints
+- 🌎 **Frontend-ready** — plug directly into React, Next.js, Webflow, or any mobile app
+- 🧱 **Zero config** — deploy in minutes with Vercel + GitHub
+
+---
+
+## 🚀 Base URL
+
+```
+https://unisa-api.vercel.app/
 ```
 
 ---
 
-# 📦 Arquitectura
+## 📡 Endpoints
 
-```
-Webflow → Vercel API Proxy → Domus API → Response → Webflow
-```
+### 🏘️ List Properties
 
----
-
-# 🚀 Tecnologías
-
-- Node.js (Serverless Functions)
-- Vercel
-- Fetch API
-- dotenv (local development)
-- GitHub (version control)
-
----
-
-# 📡 Endpoints
-
----
-
-## 🏠 1. Properties
-
-### Endpoint
-
-```
+```http
 GET /api/properties
 ```
 
-### Descripción
+Returns a paginated list of available properties.
 
-Devuelve un listado de propiedades con soporte de paginación y filtros dinámicos.
+| Query Param | Type     | Default | Description                     |
+|-------------|----------|---------|---------------------------------|
+| `page`      | `number` | `1`     | Page number                     |
+| `perpage`   | `number` | `9`     | Results per page                |
+| `*filters`  | `string` | —       | Any additional dynamic filters  |
 
----
-
-### Query Params
-
-| Param | Tipo | Default | Descripción |
-|------|------|--------|-------------|
-| page | number | 1 | Página actual |
-| filters | string | - | Filtros dinámicos (city, type, price, etc.) |
-
----
-
-### Headers
-
-| Header | Tipo | Descripción |
-|--------|------|-------------|
-| perpage | number | Cantidad de elementos por página |
-| Authorization | string | API key de Domus |
-| inmobiliaria | string | ID de inmobiliaria |
-
----
-
-### Ejemplo
-
+**Example:**
 ```
-/api/properties?page=1&city=san-salvador&type=house
+GET /api/properties?page=1&perpage=12&tipo=apartamento
 ```
 
 ---
 
-### Ejemplo de uso en frontend
+### 🏠 Property Detail
 
-```js
-fetch("https://tu-proyecto.vercel.app/api/properties?page=1", {
-  headers: {
-    perpage: 9
-  }
-})
-  .then(res => res.json())
-  .then(data => console.log(data));
+```http
+GET /api/codpro?codpro={ID}
+```
+
+Returns full details for a single property by its unique ID.
+
+**Example:**
+```
+GET /api/codpro?codpro=12345
 ```
 
 ---
 
-### Response
+### 📍 Neighborhoods
 
-```json
-{
-  "data": [],
-  "pagination": {
-    "page": 1,
-    "perpage": 9,
-    "total": 120
-  }
-}
-```
-
----
-
-## 📍 2. Neighborhoods
-
-### Endpoint
-
-```
+```http
 GET /api/neighborhoods
 ```
 
-### Descripción
-
-Devuelve lista de zonas o barrios disponibles para filtros.
+Returns all available zones and neighborhoods for filtering.
 
 ---
 
-## 🏷 3. Types
+### 🏷️ Property Types
 
-### Endpoint
-
-```
+```http
 GET /api/types
 ```
 
-### Descripción
-
-Devuelve tipos de propiedades disponibles (house, apartment, land, etc.).
+Returns all available property categories (apartment, house, office, etc.).
 
 ---
 
-## 🏡 4. Property Detail
+## 🔐 Environment Variables
 
-### Endpoint
+Create a `.env` file at the root or configure these in your Vercel dashboard:
 
+```env
+DOMUS_BASE_URL=https://your-domus-api.com
+DOMUS_API_KEY=your_api_key
+INMOBILIARIA=your_inmobiliaria_id
 ```
-GET /api/property-detail/:codpro
-```
 
-### Descripción
-
-Devuelve información detallada de una propiedad específica.
+> ⚠️ **Never commit your `.env` file.** These variables are injected at runtime by Vercel and never reach the client.
 
 ---
 
-### Params
+## ⚙️ Local Development
 
-| Param | Tipo | Descripción |
-|------|------|-------------|
-| codpro | string | Código único de la propiedad |
+**1. Clone the repository**
+```bash
+git clone https://github.com/your-username/unisa-api.git
+cd unisa-api
+```
+
+**2. Install dependencies**
+```bash
+npm install
+```
+
+**3. Set up environment variables**
+```bash
+cp .env.example .env
+# Fill in your credentials
+```
+
+**4. Start local dev server**
+```bash
+vercel dev
+```
+
+Your API will be available at `http://localhost:3000`.
 
 ---
 
-### Ejemplo
+## 🚀 Deploy
 
-```
-/api/property-detail/ABC123
-```
+This project uses **Vercel's GitHub integration** for continuous deployment. Every push to `main` triggers an automatic production deploy.
 
----
-
-# ⚙️ Variables de entorno
-
-Estas variables deben configurarse en Vercel (NO en GitHub):
-
-```
-DOMUS_BASE_URL=https://api.tu-dominio.com
-DOMUS_API_KEY=xxxxx
-INMOBILIARIA=xxxxx
+```bash
+git add .
+git commit -m "feat: your feature description"
+git push origin main
 ```
 
----
+> Vercel handles build, deployment, and SSL automatically.
 
-# 🔐 Seguridad
-
-- API keys nunca expuestas al frontend
-- Todas las requests pasan por proxy en Vercel
-- CORS controlado desde serverless functions
-- Headers sensibles manejados solo en backend
-
----
-
-# ⚙️ Estructura del proyecto
-
-```
-/api
-  ├── properties.js
-  ├── neighborhoods.js
-  ├── types.js
-  └── property-detail
-        └── [codpro].js
-
-package.json
-package-lock.json
+For first-time setup, install and link the project:
+```bash
+npm install -g vercel
+vercel login
+vercel link
+vercel env pull   # sync environment variables locally
 ```
 
 ---
 
-# 🚀 Estado del proyecto
+## 🧩 Tech Stack
 
-✔ Backend funcional  
-✔ Integración lista con Webflow  
-✔ Deploy listo en Vercel  
-✔ API estructurada y escalable  
-
----
-
-# 🧠 Notas técnicas
-
-- `perpage` se maneja vía headers (no query params)
-- `page` y filtros se manejan vía query string
-- rutas dinámicas soportadas con `[codpro]`
-- arquitectura preparada para escalar a SaaS
+| Layer         | Technology                          |
+|---------------|-------------------------------------|
+| Runtime       | Node.js (Serverless Functions)      |
+| Infrastructure| Vercel Edge Network                 |
+| HTTP Client   | Native Fetch API                    |
+| Config        | dotenv                              |
+| Backend Source| DOMUS API (external)                |
+| CI/CD         | GitHub + Vercel Auto Deploy         |
 
 ---
 
-# 🚀 Futuras mejoras posibles
+## 🛡️ Security Model
 
-- caching en Vercel (mejor performance)
-- endpoint de search tipo Airbnb
-- versionado `/v1/`
-- rate limiting
-- logging de requests
-- multi-inmobiliaria (SaaS)
+```
+Client Request
+      │
+      ▼
+┌─────────────────────────────┐
+│  UNISA API (Serverless)     │
+│  ✅ Validates request        │
+│  ✅ Injects API Key          │  ← Key never leaves the server
+│  ✅ Forwards to DOMUS        │
+│  ✅ Sanitizes response       │
+│  ✅ Returns clean JSON       │
+└─────────────────────────────┘
+      │
+      ▼
+Client Response (no keys, no internals)
+```
+
+- API keys injected server-side via Vercel env vars
+- HTTP error handling with structured error responses
+- Safe JSON parsing with fallback handling
+- Separate dev / production environments
 
 ---
 
-# 👨‍💻 Autor
+## 📈 Roadmap
 
-Proyecto construido como backend proxy para integración Webflow + Domus API.
+The architecture is designed to grow. Planned features:
+
+- [ ] 🔐 User authentication (JWT)
+- [ ] ❤️ Favorites / Wishlist
+- [ ] 📅 Property booking system
+- [ ] 💳 Payment integration (reservations)
+- [ ] 🧠 Advanced Airbnb-style filters
+- [ ] 📊 Analytics & usage metrics
+- [ ] 🌐 Multi-inmobiliaria support
+
+---
+
+## 🌎 Use Cases
+
+UNISA API is optimized for Colombian real estate platforms:
+
+- **Property portals** — rentals and sales listings
+- **Mobile apps** — iOS / Android real estate apps
+- **Webflow sites** — no-code frontends connected to live data
+- **React / Next.js apps** — full-stack property search platforms
+- **Advanced search systems** — filtered, paginated property catalogs
+
+---
+
+## 👨‍💻 Author
+
+<div align="center">
+
+**UNISA API** — Backend infrastructure for modern real estate solutions.
+
+Built by **[Frankz](https://www.linkedin.com/in/frankz-alvarz/)** · Developer @ **[Glued](https://getglued.co)**
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Frankz%20Alvarz-0077B5?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/frankz-alvarz/)
+[![Glued](https://img.shields.io/badge/Company-getglued.co-FF6B35?style=flat-square&logo=google-chrome)](https://getglued.co)
+
+<br/>
+
+*Crafting scalable infrastructure for the Latin American proptech ecosystem.*
+
+</div>
+
+---
+
+<div align="center">
+<sub>🇨🇴 Built for Colombia's real estate market · Powered by Vercel Serverless</sub>
+</div>
