@@ -1,6 +1,13 @@
 import "dotenv/config";
+import { setCors } from "../../lib/cors.js";
 
 export default async function handler(req, res) {
+  setCors(res);
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   try {
     console.log("QUERY:", req.query);
 
@@ -17,7 +24,6 @@ export default async function handler(req, res) {
 
     const url = `${baseUrl}/properties?${query}`;
 
-    //LOGS
     console.log("FINAL URL:", url);
     console.log("PERPAGE HEADER:", perpage);
 
@@ -29,7 +35,6 @@ export default async function handler(req, res) {
       }
     });
 
-    // VALIDATOR
     if (!response.ok) {
       const text = await response.text();
       return res.status(response.status).json({
@@ -38,7 +43,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // SAFER
     let data;
     try {
       data = await response.json();
