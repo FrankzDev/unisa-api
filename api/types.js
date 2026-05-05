@@ -1,15 +1,6 @@
 import "dotenv/config";
-import { setCors } from "../../lib/cors.js";
 
 export default async function handler(req, res) {
-  // 🔥 CORS
-  setCors(res);
-
-  // 🔥 Preflight request (CORS browser)
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-
   try {
     const baseUrl = process.env.DOMUS_BASE_URL;
     const url = `${baseUrl}/search/types`;
