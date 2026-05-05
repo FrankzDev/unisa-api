@@ -11,7 +11,7 @@
  ╚═════╝ ╚═╝  ╚═══╝╚═╝╚══════╝╚═╝  ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝
 ```
 
-**Serverless proxy API for modern real estate platforms in Colombia**
+**Serverless proxy API for Unisa**
 
 [![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-000000?style=flat-square&logo=vercel)](https://unisa-api.vercel.app/)
 [![Node.js](https://img.shields.io/badge/Node.js-Serverless-339933?style=flat-square&logo=node.js)](https://nodejs.org/)
@@ -34,10 +34,10 @@
 UNISA API is a **serverless proxy layer** (Backend for Frontend) built with Node.js and deployed on Vercel. It sits between your frontend and the DOMUS backend, acting as a secure, optimized gateway for real estate data in Colombia.
 
 ```
-   Your Frontend         UNISA API              DOMUS Backend
+   UNISA Frontend         UNISA API              DOMUS Backend
   ┌───────────┐        ┌──────────────┐        ┌─────────────┐
   │  React /  │  HTTP  │  Vercel      │  HTTP  │  Private    │
-  │  Next.js  │ ──────▶│  Serverless  │ ──────▶│  DOMUS API  │
+  │  Next.js  │ ─────▶│  Serverless  │ ──────▶│  DOMUS API  │
   │  Webflow  │        │  Functions   │        │             │
   └───────────┘        └──────────────┘        └─────────────┘
         ▲                     │
@@ -88,14 +88,14 @@ GET /api/properties?page=1&perpage=12&tipo=apartamento
 ### 🏠 Property Detail
 
 ```http
-GET /api/codpro?codpro={ID}
+GET /api/properties?codpro={ID}
 ```
 
 Returns full details for a single property by its unique ID.
 
 **Example:**
 ```
-GET /api/codpro?codpro=12345
+GET /api/properties?codpro=9191276
 ```
 
 ---
@@ -125,7 +125,7 @@ Returns all available property categories (apartment, house, office, etc.).
 Create a `.env` file at the root or configure these in your Vercel dashboard:
 
 ```env
-DOMUS_BASE_URL=https://your-domus-api.com
+DOMUS_BASE_URL=https://api.domus.la/3.0
 DOMUS_API_KEY=your_api_key
 INMOBILIARIA=your_inmobiliaria_id
 ```
@@ -138,7 +138,7 @@ INMOBILIARIA=your_inmobiliaria_id
 
 **1. Clone the repository**
 ```bash
-git clone https://github.com/your-username/unisa-api.git
+git clone https://github.com/FrankzDev/unisa-api.git
 cd unisa-api
 ```
 
@@ -205,11 +205,11 @@ Client Request
       ▼
 ┌─────────────────────────────┐
 │  UNISA API (Serverless)     │
-│  ✅ Validates request        │
-│  ✅ Injects API Key          │  ← Key never leaves the server
-│  ✅ Forwards to DOMUS        │
-│  ✅ Sanitizes response       │
-│  ✅ Returns clean JSON       │
+│  ✅ Validates request       │
+│  ✅ Injects API Key         │  ← Key never leaves the server
+│  ✅ Forwards to DOMUS       │
+│  ✅ Sanitizes response      │
+│  ✅ Returns clean JSON      │
 └─────────────────────────────┘
       │
       ▼
@@ -223,23 +223,9 @@ Client Response (no keys, no internals)
 
 ---
 
-## 📈 Roadmap
-
-The architecture is designed to grow. Planned features:
-
-- [ ] 🔐 User authentication (JWT)
-- [ ] ❤️ Favorites / Wishlist
-- [ ] 📅 Property booking system
-- [ ] 💳 Payment integration (reservations)
-- [ ] 🧠 Advanced Airbnb-style filters
-- [ ] 📊 Analytics & usage metrics
-- [ ] 🌐 Multi-inmobiliaria support
-
----
-
 ## 🌎 Use Cases
 
-UNISA API is optimized for Colombian real estate platforms:
+UNISA API is optimized for Unisa:
 
 - **Property portals** — rentals and sales listings
 - **Mobile apps** — iOS / Android real estate apps
@@ -269,5 +255,5 @@ Built by **[Frankz](https://www.linkedin.com/in/frankz-alvarz/)** · Developer @
 ---
 
 <div align="center">
-<sub>🇨🇴 Built for Colombia's real estate market · Powered by Vercel Serverless</sub>
+<sub>🇨🇴 Built for Unisa Colombia · Powered by Glued</sub>
 </div>
