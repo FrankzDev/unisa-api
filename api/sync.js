@@ -84,12 +84,116 @@ async function getDomusPropertiesByPage(page) {
     allProperties.push(
       ...json.data.map((p) => ({
         ...p,
-        _inmobiliaria: inmobiliaria // 🔥 clave para evitar colisiones
+        _inmobiliaria: inmobiliaria
       }))
     );
   }
 
   return { properties: allProperties, totalPages };
+}
+
+// ─── DOMUS TYPES ─────────────────────────────────────────────────────────────
+
+async function getAllDomusTypes() {
+  const res = await fetch(`${process.env.DOMUS_BASE_URL}/search/types`, {
+    headers: {
+      Authorization: process.env.DOMUS_API_KEY,
+      inmobiliaria: String(INMOBILIARIAS[0])
+    }
+  });
+
+  const json = await res.json();
+  return json.data;
+}
+
+// ─── DOMUS NEIGHBORHOODS ─────────────────────────────────────────────────────
+
+async function getAllDomusNeighborhoods() {
+  const res = await fetch(`${process.env.DOMUS_BASE_URL}/search/neighborhoods`, {
+    headers: {
+      Authorization: process.env.DOMUS_API_KEY,
+      inmobiliaria: String(INMOBILIARIAS[0])
+    }
+  });
+
+  const json = await res.json();
+  return json.data;
+}
+
+// ─── SYNC TYPES ──────────────────────────────────────────────────────────────
+
+async function syncTypes() {
+  console.log("\n── Sync Types ──");
+
+  const domusTypes = await getAllDomusTypes();
+  const webflowTypes = await getAllWebflowItems(COLLECTIONS.types);
+
+  const webflowMap = new Map(
+    webflowTypes.map((i) => [String(i.fieldData["code"]), i])
+  );
+
+  let created = 0;
+
+  for (const type of domusTypes) {
+    const code = String(type.code);
+
+    if (!webflowMap.has(code)) {
+      await webflowRequest("POST", `/collections/${COLLECTIONS.types}/items`, {
+        fieldData: {
+          name: type.name,
+          code
+        }
+      });
+
+      created++;
+    }
+  }
+
+  console.log(`Types → ${created} creados`);
+
+  return { created };
+}
+
+// ─── SYNC NEIGHBORHOODS ──────────────────────────────────────────────────────
+
+async function syncNeighborhoods() {
+  console.log("\n── Sync Neighborhoods ──");
+
+  const domusNeighborhoods = await getAllDomusNeighborhoods();
+  const webflowNeighborhoods = await getAllWebflowItems(
+    COLLECTIONS.neighborhoods
+  );
+
+  const webflowMap = new Map(
+    webflowNeighborhoods.map((i) => [String(i.fieldData["code"]), i])
+  );
+
+  let created = 0;
+
+  for (const n of domusNeighborhoods) {
+    const code = String(n.code);
+
+    if (!webflowMap.has(code)) {
+      await webflowRequest(
+        "POST",
+        `/collections/${COLLECTIONS.neighborhoods}/items`,
+        {
+          fieldData: {
+            name: n.name,
+            code,
+            "city-code": String(n.city_code),
+            "city-name": n.city_name?.trim() || ""
+          }
+        }
+      );
+
+      created++;
+    }
+  }
+
+  console.log(`Neighborhoods → ${created} creados`);
+
+  return { created };
 }
 
 // ─── MAP PROPERTY ────────────────────────────────────────────────────────────
@@ -132,7 +236,6 @@ function mapPropertyToWebflow(property) {
         property.vip === "true" ||
         property.vip === 1,
 
-      // 🔥 CAMPO CLAVE
       "update-on": property.updated_at
         ? new Date(property.updated_at).toISOString()
         : null
@@ -221,7 +324,27 @@ export default async function handler(req, res) {
 
       return res.status(200).json({
         ok: true,
-        message: `Page ${result.page}/${result.totalPages}`,
+        type: "properties",
+        ...result
+      });
+    }
+
+    if (target === "types") {
+      const result = await syncTypes();
+
+      return res.status(200).json({
+        ok: true,
+        type: "types",
+        ...result
+      });
+    }
+
+    if (target === "neighborhoods") {
+      const result = await syncNeighborhoods();
+
+      return res.status(200).json({
+        ok: true,
+        type: "neighborhoods",
         ...result
       });
     }
