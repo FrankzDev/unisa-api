@@ -199,49 +199,79 @@ async function syncNeighborhoods() {
 // ─── MAP PROPERTY ────────────────────────────────────────────────────────────
 
 function mapPropertyToWebflow(property) {
-  return {
-    fieldData: {
-      name: `${property.type?.trim() || "Propiedad"} en ${
-        property.neighborhood?.trim() ||
-        property.city?.trim() ||
-        "zona"
-      } - ${property.reference?.trim() || property.codpro}`,
-
-      slug: `${property.codpro}-${property.reference || ""}-${property._inmobiliaria}`
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim()
-        .replace(/\s+/g, "-")
-        .replace(/[^a-z0-9-]/g, ""),
-
-      codpro: `${property.codpro}-${property._inmobiliaria}`,
-
-      reference: property.reference?.trim() || "",
-      city: property.city?.trim() || "",
-      neighborhood: property.neighborhood?.trim() || "",
-
-      price: Number(property.price) || 0,
-      rent: Number(property.rent) || 0,
-      saleprice: Number(property.saleprice) || 0,
-
-      description: property.description?.trim() || "",
-
-      image1: property.image1 || "",
-      image2: property.image2 || "",
-      image3: property.image3 || "",
-
-      "vip-2":
-        property.vip === true ||
-        property.vip === "true" ||
-        property.vip === 1,
-
-      "update-on": property.updated_at
-        ? new Date(property.updated_at).toISOString()
-        : null
+    const type = property.type?.trim() || "";
+    const biz = property.biz?.trim() || "";
+    const neighborhood = property.neighborhood?.trim() || "";
+    const city = property.city?.trim() || "";
+  
+    // ─── BUILD NAME DINÁMICO ─────────────────────────
+  
+    let nameParts = [];
+  
+    // Parte izquierda (type + biz)
+    if (type && biz) {
+      nameParts.push(`${type} en ${biz}`);
+    } else if (type) {
+      nameParts.push(type);
+    } else if (biz) {
+      nameParts.push(biz);
     }
-  };
-}
+  
+    // Parte derecha (ubicación)
+    let locationParts = [];
+    if (neighborhood) locationParts.push(neighborhood);
+    if (city) locationParts.push(city);
+  
+    if (locationParts.length) {
+      nameParts.push(locationParts.join(", "));
+    }
+  
+    const name = nameParts.join(" - ").trim();
+  
+    // ─── BUILD SLUG ─────────────────────────
+  
+    const slugBase = name || `${property.codpro}`;
+  
+    const slug = `${slugBase}-${property.codpro}-${property._inmobiliaria}`
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "");
+  
+    return {
+      fieldData: {
+        name,
+        slug,
+  
+        codpro: `${property.codpro}-${property._inmobiliaria}`,
+  
+        reference: property.reference?.trim() || "",
+        city,
+        neighborhood,
+  
+        price: Number(property.price) || 0,
+        rent: Number(property.rent) || 0,
+        saleprice: Number(property.saleprice) || 0,
+  
+        description: property.description?.trim() || "",
+  
+        image1: property.image1 || "",
+        image2: property.image2 || "",
+        image3: property.image3 || "",
+  
+        "vip-2":
+          property.vip === true ||
+          property.vip === "true" ||
+          property.vip === 1,
+  
+        "update-on": property.updated_at
+          ? new Date(property.updated_at).toISOString()
+          : null
+      }
+    };
+  }
 
 // ─── SYNC PROPERTIES PAGINADO ────────────────────────────────────────────────
 
