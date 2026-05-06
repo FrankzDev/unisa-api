@@ -1,6 +1,24 @@
 import "dotenv/config";
 
+const ALLOWED_ORIGINS = [
+  "https://unisa-dev.webflow.io/" // // ← WEBFLOW DOMAIN
+  //"https://tu-dominio-custom.com", // ← EXTRA DOMAIN
+  //"https://www.tu-dominio-custom.com" // ← EXTRA DOMAIN
+];
+
 export default async function handler(req, res) {
+  // CORS
+  const origin = req.headers.origin;
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   try {
     const baseUrl = process.env.DOMUS_BASE_URL;
     const url = `${baseUrl}/search/types`;

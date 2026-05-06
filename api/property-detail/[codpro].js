@@ -1,6 +1,23 @@
 import "dotenv/config";
 
+const ALLOWED_ORIGINS = [
+  "https://unisa-dev.webflow.io/", // ← WEBFLOW DOMAIN
+  //"https://tu-dominio-custom.com", // ← EXTRA DOMAIN
+];
+
 export default async function handler(req, res) {
+  // CORS
+  const origin = req.headers.origin;
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   try {
     const { codpro } = req.query;
 
@@ -13,7 +30,6 @@ export default async function handler(req, res) {
     const baseUrl = process.env.DOMUS_BASE_URL;
     const url = `${baseUrl}/properties/${codpro}`;
 
-    // LOGS
     console.log("URL:", url);
     console.log("QUERY:", req.query);
 
@@ -24,7 +40,6 @@ export default async function handler(req, res) {
       }
     });
 
-    // VALIDATOR
     if (!response.ok) {
       const text = await response.text();
       return res.status(response.status).json({
@@ -33,7 +48,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // SAFER
     let data;
     try {
       data = await response.json();
