@@ -1,7 +1,7 @@
 import "dotenv/config";
 
 const ALLOWED_ORIGINS = [
-  "https://unisa-dev.webflow.io/", // ← WEBFLOW DOMAIN
+  "https://unisa-dev.webflow.io", // ← WEBFLOW DOMAIN
   //"https://tu-dominio-custom.com", // ← EXTRA DOMAIN
 ];
 
