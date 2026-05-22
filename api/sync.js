@@ -459,7 +459,7 @@ async function syncProperties(page = 1, webflowMap) {
   // ─── DELETE MISSING ─────────────────────────
 
   // SOLO en última página
-  /*if (page === totalPages) {
+  if (page === totalPages) {
     for (const [key, item] of webflowMap.entries()) {
       if (!domusKeys.has(key)) {
         await webflowRequest(
@@ -482,7 +482,7 @@ async function syncProperties(page = 1, webflowMap) {
     created,
     updated,
     deleted
-  };*/
+  };
 }
 
 // ─── HANDLER ─────────────────────────────────────────────────────────────────

@@ -36,7 +36,7 @@ export default async function handler(req, res) {
     const response = await fetch(url, {
       headers: {
         Authorization: process.env.DOMUS_API_KEY,
-        inmobiliaria: process.env.INMOBILIARIA
+        inmobiliaria: String(process.env.INMOBILIARIA).trim()
       }
     });
 
