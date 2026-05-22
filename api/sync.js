@@ -219,10 +219,10 @@ async function syncNeighborhoods() {
 // ─── MAP PROPERTY ────────────────────────────────────────────────────────────
 
 function mapPropertyToWebflow(property) {
+
   const type = property.type?.trim() || "";
   const biz = property.biz?.trim() || "";
-  const neighborhood =
-    property.neighborhood?.trim() || "";
+  const neighborhood = property.neighborhood?.trim() || "";
   const city = property.city?.trim() || "";
 
   // ─── BUILD NAME ─────────────────────────
@@ -255,7 +255,9 @@ function mapPropertyToWebflow(property) {
 
   // ─── SLUG ─────────────────────────
 
-  const slug = `${name}-${property.codpro}`
+  const slugBase = name || `${property.codpro}`;
+
+  const slug = `${slugBase}-${property.codpro}`
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -274,38 +276,124 @@ function mapPropertyToWebflow(property) {
 
   return {
     fieldData: {
+
+      // REQUIRED
       name,
       slug,
 
-      codpro: `${property.codpro}-${property._inmobiliaria}`,
+      // IDS
+      idpro: String(property.idpro || ""),
+      codpro: String(property.codpro),
 
+      // BASIC
       reference: property.reference?.trim() || "",
+      address: property.address?.trim() || "",
 
+      // LOCATION
       city,
+      "city-code": String(property.city_code || ""),
+
+      zone: property.zone?.trim() || "",
+      "zone-code": String(property.zone_code || ""),
+
+      "city-zone":
+        property.city_zone?.trim() || "",
+
+      "city-zone-code":
+        String(property.city_zone_code || ""),
+
       neighborhood,
 
+      "neighborhood-code":
+        String(property.neighborhood_code || ""),
+
+      // TYPE
+      type,
+      "type-code":
+        String(property.type_code || ""),
+
+      // BIZ
+      biz,
+      "biz-code":
+        String(property.biz_code || ""),
+
+      // PRICES
       price: Number(property.price) || 0,
+
+      "price-format-2":
+        property.price_format?.trim() || "",
+
       rent: Number(property.rent) || 0,
       saleprice: Number(property.saleprice) || 0,
 
+      // COORDS
+      latitude:
+        Number(property.latitude) || 0,
+
+      longitude:
+        Number(property.longitude) || 0,
+
+      // DESCRIPTION
       description:
         property.description?.trim() || "",
 
+      // DATES
+      "registry-date":
+        property.registry_date
+          ? new Date(property.registry_date).toISOString()
+          : null,
+
+      // REAL STATE
+      "real-state-logo":
+        property.real_state_logo || "",
+
+      "real-state-name":
+        property.real_state_name || "",
+
+      // COMMENT
+      comment:
+        property.comment?.trim() || "",
+
+      // IMAGES
       image1: property.image1 || "",
       image2: property.image2 || "",
       image3: property.image3 || "",
 
-      video: hasVideo,
-      "tour-3d": has360,
+      // AREAS
+      "area-lot-2":
+        Number(property.area_lot) || 0,
 
+      "area-cons-2":
+        Number(property.area_cons) || 0,
+
+      // ROOMS
+      "bedrooms-2":
+        Number(property.bedrooms) || 0,
+
+      "bathrooms-2":
+        Number(property.bathrooms) || 0,
+
+      "parking-2":
+        Number(property.parking) || 0,
+
+      "parking-covered-2":
+        Number(property.parking_covered) || 0,
+
+      // SWITCHES
       "vip-2":
         property.vip === true ||
         property.vip === "true" ||
         property.vip === 1,
 
-      "update-on": property.updated_at
-        ? new Date(property.updated_at).toISOString()
-        : null
+      video: hasVideo,
+
+      "tour-3d": has360,
+
+      // UPDATE
+      "update-on":
+        property.updated_at
+          ? new Date(property.updated_at).toISOString()
+          : null
     }
   };
 }
