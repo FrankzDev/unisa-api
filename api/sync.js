@@ -9,7 +9,7 @@ const COLLECTIONS = {
   neighborhoods: "69fb62f288a1071da3961042"
 };
 
-const INMOBILIARIAS = [1, 2];
+const INMOBILIARIA = 1;
 const DOMUS_PERPAGE = 50;
 
 // ─── WEBFLOW REQUEST ─────────────────────────────────────────────────────────
@@ -24,13 +24,19 @@ async function webflowRequest(method, path, body = null) {
     }
   };
 
-  if (body) options.body = JSON.stringify(body);
+  if (body) {
+    options.body = JSON.stringify(body);
+  }
 
   const res = await fetch(`${WEBFLOW_BASE_URL}${path}`, options);
 
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Webflow error ${res.status}: ${text}`);
+  }
+
+  if (res.status === 204) {
+    return {};
   }
 
   return res.json();
@@ -51,7 +57,9 @@ async function getAllWebflowItems(collectionId) {
 
     items = items.concat(data.items || []);
 
-    if (items.length >= data.pagination.total) break;
+    if (items.length >= data.pagination.total) {
+      break;
+    }
 
     offset += limit;
   }
@@ -62,34 +70,26 @@ async function getAllWebflowItems(collectionId) {
 // ─── DOMUS PAGINATED ─────────────────────────────────────────────────────────
 
 async function getDomusPropertiesByPage(page) {
-  let allProperties = [];
-  let totalPages = 1;
-
-  for (const inmobiliaria of INMOBILIARIAS) {
-    const res = await fetch(
-      `${process.env.DOMUS_BASE_URL}/properties?page=${page}`,
-      {
-        headers: {
-          Authorization: process.env.DOMUS_API_KEY,
-          inmobiliaria: String(inmobiliaria),
-          perpage: String(DOMUS_PERPAGE)
-        }
+  const res = await fetch(
+    `${process.env.DOMUS_BASE_URL}/properties?page=${page}`,
+    {
+      headers: {
+        Authorization: process.env.DOMUS_API_KEY,
+        inmobiliaria: String(INMOBILIARIA),
+        perpage: String(DOMUS_PERPAGE)
       }
-    );
+    }
+  );
 
-    const json = await res.json();
+  const json = await res.json();
 
-    totalPages = Math.max(totalPages, json.last_page);
-
-    allProperties.push(
-      ...json.data.map((p) => ({
-        ...p,
-        _inmobiliaria: inmobiliaria
-      }))
-    );
-  }
-
-  return { properties: allProperties, totalPages };
+  return {
+    properties: json.data.map((p) => ({
+      ...p,
+      _inmobiliaria: INMOBILIARIA
+    })),
+    totalPages: json.last_page
+  };
 }
 
 // ─── DOMUS TYPES ─────────────────────────────────────────────────────────────
@@ -98,11 +98,12 @@ async function getAllDomusTypes() {
   const res = await fetch(`${process.env.DOMUS_BASE_URL}/search/types`, {
     headers: {
       Authorization: process.env.DOMUS_API_KEY,
-      inmobiliaria: String(INMOBILIARIAS[0])
+      inmobiliaria: String(INMOBILIARIA)
     }
   });
 
   const json = await res.json();
+
   return json.data;
 }
 
@@ -112,11 +113,12 @@ async function getAllDomusNeighborhoods() {
   const res = await fetch(`${process.env.DOMUS_BASE_URL}/search/neighborhoods`, {
     headers: {
       Authorization: process.env.DOMUS_API_KEY,
-      inmobiliaria: String(INMOBILIARIAS[0])
+      inmobiliaria: String(INMOBILIARIA)
     }
   });
 
   const json = await res.json();
+
   return json.data;
 }
 
@@ -126,10 +128,16 @@ async function syncTypes() {
   console.log("\n── Sync Types ──");
 
   const domusTypes = await getAllDomusTypes();
-  const webflowTypes = await getAllWebflowItems(COLLECTIONS.types);
+
+  const webflowTypes = await getAllWebflowItems(
+    COLLECTIONS.types
+  );
 
   const webflowMap = new Map(
-    webflowTypes.map((i) => [String(i.fieldData["code"]), i])
+    webflowTypes.map((i) => [
+      String(i.fieldData["code"]),
+      i
+    ])
   );
 
   let created = 0;
@@ -138,12 +146,16 @@ async function syncTypes() {
     const code = String(type.code);
 
     if (!webflowMap.has(code)) {
-      await webflowRequest("POST", `/collections/${COLLECTIONS.types}/items`, {
-        fieldData: {
-          name: type.name,
-          code
+      await webflowRequest(
+        "POST",
+        `/collections/${COLLECTIONS.types}/items`,
+        {
+          fieldData: {
+            name: type.name,
+            code
+          }
         }
-      });
+      );
 
       created++;
     }
@@ -159,13 +171,19 @@ async function syncTypes() {
 async function syncNeighborhoods() {
   console.log("\n── Sync Neighborhoods ──");
 
-  const domusNeighborhoods = await getAllDomusNeighborhoods();
-  const webflowNeighborhoods = await getAllWebflowItems(
-    COLLECTIONS.neighborhoods
-  );
+  const domusNeighborhoods =
+    await getAllDomusNeighborhoods();
+
+  const webflowNeighborhoods =
+    await getAllWebflowItems(
+      COLLECTIONS.neighborhoods
+    );
 
   const webflowMap = new Map(
-    webflowNeighborhoods.map((i) => [String(i.fieldData["code"]), i])
+    webflowNeighborhoods.map((i) => [
+      String(i.fieldData["code"]),
+      i
+    ])
   );
 
   let created = 0;
@@ -191,7 +209,9 @@ async function syncNeighborhoods() {
     }
   }
 
-  console.log(`Neighborhoods → ${created} creados`);
+  console.log(
+    `Neighborhoods → ${created} creados`
+  );
 
   return { created };
 }
@@ -199,106 +219,123 @@ async function syncNeighborhoods() {
 // ─── MAP PROPERTY ────────────────────────────────────────────────────────────
 
 function mapPropertyToWebflow(property) {
-    const type = property.type?.trim() || "";
-    const biz = property.biz?.trim() || "";
-    const neighborhood = property.neighborhood?.trim() || "";
-    const city = property.city?.trim() || "";
-  
-    // ─── BUILD NAME DINÁMICO ─────────────────────────
-  
-    let nameParts = [];
-  
-    // Parte izquierda (type + biz)
-    if (type && biz) {
-      nameParts.push(`${type} en ${biz}`);
-    } else if (type) {
-      nameParts.push(type);
-    } else if (biz) {
-      nameParts.push(biz);
-    }
-  
-    // Parte derecha (ubicación)
-    let locationParts = [];
-    if (neighborhood) locationParts.push(neighborhood);
-    if (city) locationParts.push(city);
-  
-    if (locationParts.length) {
-      nameParts.push(locationParts.join(", "));
-    }
-  
-    const name = nameParts.join(" - ").trim();
-  
-    // ─── BUILD SLUG ─────────────────────────
-  
-    const slugBase = name || `${property.codpro}`;
-  
-    const slug = `${slugBase}-${property.codpro}-${property._inmobiliaria}`
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .trim()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9-]/g, "");
-  
-    return {
-      fieldData: {
-        name,
-        slug,
-  
-        codpro: `${property.codpro}-${property._inmobiliaria}`,
-  
-        reference: property.reference?.trim() || "",
-        city,
-        neighborhood,
-  
-        price: Number(property.price) || 0,
-        rent: Number(property.rent) || 0,
-        saleprice: Number(property.saleprice) || 0,
-  
-        description: property.description?.trim() || "",
-  
-        image1: property.image1 || "",
-        image2: property.image2 || "",
-        image3: property.image3 || "",
-  
-        "vip-2":
-          property.vip === true ||
-          property.vip === "true" ||
-          property.vip === 1,
-  
-        "update-on": property.updated_at
-          ? new Date(property.updated_at).toISOString()
-          : null
-      }
-    };
+  const type = property.type?.trim() || "";
+  const biz = property.biz?.trim() || "";
+  const neighborhood =
+    property.neighborhood?.trim() || "";
+  const city = property.city?.trim() || "";
+
+  // ─── BUILD NAME ─────────────────────────
+
+  let nameParts = [];
+
+  if (type && biz) {
+    nameParts.push(`${type} en ${biz}`);
+  } else if (type) {
+    nameParts.push(type);
+  } else if (biz) {
+    nameParts.push(biz);
   }
 
-// ─── SYNC PROPERTIES PAGINADO ────────────────────────────────────────────────
+  let locationParts = [];
 
-async function syncProperties(page = 1) {
+  if (neighborhood) {
+    locationParts.push(neighborhood);
+  }
+
+  if (city) {
+    locationParts.push(city);
+  }
+
+  if (locationParts.length) {
+    nameParts.push(locationParts.join(", "));
+  }
+
+  const name = nameParts.join(" - ").trim();
+
+  // ─── SLUG ─────────────────────────
+
+  const slug = `${name}-${property.codpro}`
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "");
+
+  // ─── VIDEO / 360 ─────────────────────────
+
+  const hasVideo =
+    property.video &&
+    String(property.video).trim() !== "";
+
+  const has360 =
+    Number(property.images360_count || 0) > 0;
+
+  return {
+    fieldData: {
+      name,
+      slug,
+
+      codpro: `${property.codpro}-${property._inmobiliaria}`,
+
+      reference: property.reference?.trim() || "",
+
+      city,
+      neighborhood,
+
+      price: Number(property.price) || 0,
+      rent: Number(property.rent) || 0,
+      saleprice: Number(property.saleprice) || 0,
+
+      description:
+        property.description?.trim() || "",
+
+      image1: property.image1 || "",
+      image2: property.image2 || "",
+      image3: property.image3 || "",
+
+      video: hasVideo,
+      "tour-3d": has360,
+
+      "vip-2":
+        property.vip === true ||
+        property.vip === "true" ||
+        property.vip === 1,
+
+      "update-on": property.updated_at
+        ? new Date(property.updated_at).toISOString()
+        : null
+    }
+  };
+}
+
+// ─── SYNC PROPERTIES ─────────────────────────────────────────────────────────
+
+async function syncProperties(page = 1, webflowMap) {
   console.log(`\n── Sync Properties Page ${page} ──`);
 
-  const { properties: domusProperties, totalPages } =
-    await getDomusPropertiesByPage(page);
-
-  const webflowProperties = await getAllWebflowItems(
-    COLLECTIONS.properties
-  );
-
-  const webflowMap = new Map(
-    webflowProperties.map((item) => [
-      String(item.fieldData["codpro"]),
-      item
-    ])
-  );
+  const {
+    properties: domusProperties,
+    totalPages
+  } = await getDomusPropertiesByPage(page);
 
   let created = 0;
   let updated = 0;
+  let deleted = 0;
+
+  const domusKeys = new Set();
 
   for (const property of domusProperties) {
-    const key = `${property.codpro}-${property._inmobiliaria}`;
+    const key =
+      `${property.codpro}-${property._inmobiliaria}`;
+
+    domusKeys.add(key);
+
     const existing = webflowMap.get(key);
-    const mapped = mapPropertyToWebflow(property);
+
+    const mapped =
+      mapPropertyToWebflow(property);
 
     if (!existing) {
       await webflowRequest(
@@ -306,51 +343,94 @@ async function syncProperties(page = 1) {
         `/collections/${COLLECTIONS.properties}/items`,
         mapped
       );
+
       created++;
-    } else {
-      const domusUpdated = property.updated_at
+
+      continue;
+    }
+
+    const domusUpdated =
+      property.updated_at
         ? new Date(property.updated_at).toISOString()
         : null;
 
-      const webflowUpdated = existing.fieldData["update-on"] || null;
+    const webflowUpdated =
+      existing.fieldData["update-on"] || null;
 
-      if (domusUpdated !== webflowUpdated) {
+    if (domusUpdated !== webflowUpdated) {
+      await webflowRequest(
+        "PATCH",
+        `/collections/${COLLECTIONS.properties}/items/${existing.id}`,
+        mapped
+      );
+
+      updated++;
+    }
+  }
+
+  // ─── DELETE MISSING ─────────────────────────
+
+  // SOLO en última página
+  if (page === totalPages) {
+    for (const [key, item] of webflowMap.entries()) {
+      if (!domusKeys.has(key)) {
         await webflowRequest(
-          "PATCH",
-          `/collections/${COLLECTIONS.properties}/items/${existing.id}`,
-          mapped
+          "DELETE",
+          `/collections/${COLLECTIONS.properties}/items/${item.id}`
         );
-        updated++;
+
+        deleted++;
       }
     }
   }
 
   console.log(
-    `Page ${page}/${totalPages} → ${created} creadas, ${updated} actualizadas`
+    `Page ${page}/${totalPages} → ${created} creadas, ${updated} actualizadas, ${deleted} eliminadas`
   );
 
   return {
     page,
     totalPages,
     created,
-    updated
+    updated,
+    deleted
   };
 }
 
 // ─── HANDLER ─────────────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
-  const secret = req.headers["x-sync-secret"] || req.query.secret;
+  const secret =
+    req.headers["x-sync-secret"] ||
+    req.query.secret;
 
   if (secret !== process.env.SYNC_SECRET) {
-    return res.status(401).json({ error: "Unauthorized" });
+    return res
+      .status(401)
+      .json({ error: "Unauthorized" });
   }
 
   const { target, page = 1 } = req.query;
 
   try {
     if (target === "properties") {
-      const result = await syncProperties(Number(page));
+
+      const webflowProperties =
+        await getAllWebflowItems(
+          COLLECTIONS.properties
+        );
+
+      const webflowMap = new Map(
+        webflowProperties.map((item) => [
+          String(item.fieldData["codpro"]),
+          item
+        ])
+      );
+
+      const result = await syncProperties(
+        Number(page),
+        webflowMap
+      );
 
       return res.status(200).json({
         ok: true,
@@ -370,7 +450,8 @@ export default async function handler(req, res) {
     }
 
     if (target === "neighborhoods") {
-      const result = await syncNeighborhoods();
+      const result =
+        await syncNeighborhoods();
 
       return res.status(200).json({
         ok: true,
@@ -379,9 +460,14 @@ export default async function handler(req, res) {
       });
     }
 
-    return res.status(400).json({ error: "Invalid target" });
+    return res
+      .status(400)
+      .json({ error: "Invalid target" });
+
   } catch (error) {
+
     console.error("Sync error:", error);
+
     return res.status(500).json({
       error: "Sync failed",
       details: error.message
