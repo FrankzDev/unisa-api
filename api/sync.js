@@ -215,6 +215,11 @@ async function syncProperties(page = 1, webflowMap) {
     if (needsDetail) {
       const detail = await getPropertyDetail(property.codpro);
       fullProperty = { ...property, ...detail };
+      console.log(
+        property.codpro,
+        (fullProperty.images || []).length,
+        (fullProperty.amenities || []).length
+      );
     }
 
     const mapped = mapPropertyToWebflow(fullProperty);
