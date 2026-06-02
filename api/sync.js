@@ -10,7 +10,7 @@ const COLLECTIONS = {
 };
 
 const INMOBILIARIA = 1;
-const DOMUS_PERPAGE = 25;
+const DOMUS_PERPAGE = 50;
 
 // ─────────────────────────────────────────────
 // WEBFLOW REQUEST
@@ -270,7 +270,10 @@ async function syncProperties(page = 1, webflowMap) {
     let fullProperty = property;
 
     const needsDetail =
-      !existing || domusUpdated !== webflowUpdated;
+      !existing ||
+      domusUpdated !== webflowUpdated ||
+      !existing?.fieldData?.["gallery-json"] ||
+      !existing?.fieldData?.["amenities-json"];
 
     if (needsDetail) {
       const detail = await getPropertyDetail(property.codpro);
@@ -282,7 +285,10 @@ async function syncProperties(page = 1, webflowMap) {
       );
     }
 
-    const mapped = mapPropertyToWebflow(fullProperty);
+    const mapped = mapPropertyToWebflow(
+      fullProperty,
+      existing
+    );
 
     if (!existing) {
       await webflowRequest(
