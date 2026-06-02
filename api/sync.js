@@ -112,7 +112,7 @@ async function getPropertyDetail(codpro) {
 // MAP PROPERTY
 // ─────────────────────────────────────────────
 
-function mapPropertyToWebflow(property) {
+function mapPropertyToWebflow(property, existing = null) {
   const city = property.city?.trim() || "";
   const type = property.type?.trim() || "";
   const biz = property.biz?.trim() || "";
@@ -127,117 +127,120 @@ function mapPropertyToWebflow(property) {
     .replace(/\s+/g, "-")
     .replace(/[^a-z0-9-]/g, "");
 
-    return {
-      fieldData: {
-        name,
-        slug,
-    
-        // IDs
-        idpro: String(property.idpro || ""),
-        codpro: String(property.codpro || ""),
-    
-        // Ubicación
-        reference: property.reference || "",
-        address: property.address || "",
-    
-        city,
-        "city-code": String(property.city_code || ""),
-    
-        zone: property.zone || "",
-        "zone-code": String(property.zone_code || ""),
-    
-        "city-zone": property.city_zone || "",
-        "city-zone-code": String(property.city_zone_code || ""),
-    
-        neighborhood,
-        "neighborhood-code": String(property.neighborhood_code || ""),
-    
-        type,
-        "type-code": String(property.type_code || ""),
-    
-        biz,
-        "biz-code": String(property.biz_code || ""),
-    
-        // Precios
-        price: Number(property.price) || 0,
-        "price-format-2": property.price_format || "",
-        rent: Number(property.rent) || 0,
-        saleprice: Number(property.saleprice) || 0,
-    
-        // Coordenadas
-        latitude: Number(property.latitude) || 0,
-        longitude: Number(property.longitude) || 0,
-    
-        // Texto
-        description: property.description || "",
-        comment: property.comment || "",
-    
-        // Fechas
-        "registry-date": property.registry_date
-          ? new Date(property.registry_date).toISOString()
-          : null,
-    
-        "update-on": property.updated_at
-          ? new Date(property.updated_at).toISOString()
-          : null,
-    
-        // Inmobiliaria
-        "real-state-logo":
-          property.real_state_information?.logo_url ||
-          property.real_state_logo ||
-          "",
-    
-        "real-state-name":
-          property.real_state_name ||
-          property.real_state_information?.name ||
-          "",
-    
-        // Imágenes principales
-        image1: property.image1 || "",
-        image2: property.image2 || "",
-        image3: property.image3 || "",
-    
-        // Áreas
-        "area-lot-2": Number(property.area_lot) || 0,
-        "area-cons-2": Number(property.area_cons) || 0,
-    
-        // Habitaciones
-        "bedrooms-2": Number(property.bedrooms) || 0,
-        "bathrooms-2": Number(property.bathrooms) || 0,
-    
-        // Parqueaderos
-        "parking-2": Number(property.parking) || 0,
-        "parking-covered-2":
-          Number(property.parking_covered) || 0,
-    
-        // Switches
-        "vip-2": Boolean(property.vip),
-    
-        video: Boolean(
-          property.video &&
-          String(property.video).trim() !== ""
-        ),
-    
-        "tour-3d": Boolean(
-          property.tour3d &&
-          String(property.tour3d).trim() !== ""
-        ),
-    
-        // JSON Gallery
-        "gallery-json": JSON.stringify(
-          (property.images || []).map(img => ({
-            url: img.imageurl,
-            thumb: img.thumburl,
-            order: img.order
-          }))
-        ),
-    
-        // JSON Amenities
-        "amenities-json": JSON.stringify(
-          (property.amenities || []).map(a => a.name)
-        )
-      }
-    };
+  return {
+    fieldData: {
+      name,
+      slug,
+
+      // IDs
+      idpro: String(property.idpro || ""),
+      codpro: String(property.codpro || ""),
+
+      // Ubicación
+      reference: property.reference || "",
+      address: property.address || "",
+
+      city,
+      "city-code": String(property.city_code || ""),
+
+      zone: property.zone || "",
+      "zone-code": String(property.zone_code || ""),
+
+      "city-zone": property.city_zone || "",
+      "city-zone-code": String(property.city_zone_code || ""),
+
+      neighborhood,
+      "neighborhood-code": String(property.neighborhood_code || ""),
+
+      type,
+      "type-code": String(property.type_code || ""),
+
+      biz,
+      "biz-code": String(property.biz_code || ""),
+
+      // Precios
+      price: Number(property.price) || 0,
+      "price-format-2": property.price_format || "",
+      rent: Number(property.rent) || 0,
+      saleprice: Number(property.saleprice) || 0,
+
+      // Coordenadas
+      latitude: Number(property.latitude) || 0,
+      longitude: Number(property.longitude) || 0,
+
+      // Texto
+      description: property.description || "",
+      comment: property.comment || "",
+
+      // Fechas
+      "registry-date": property.registry_date
+        ? new Date(property.registry_date).toISOString()
+        : null,
+
+      "update-on": property.updated_at
+        ? new Date(property.updated_at).toISOString()
+        : null,
+
+      // Inmobiliaria
+      "real-state-logo":
+        property.real_state_information?.logo_url ||
+        property.real_state_logo ||
+        "",
+
+      "real-state-name":
+        property.real_state_name ||
+        property.real_state_information?.name ||
+        "",
+
+      // Imágenes principales
+      image1: property.image1 || "",
+      image2: property.image2 || "",
+      image3: property.image3 || "",
+
+      // Áreas
+      "area-lot-2": Number(property.area_lot) || 0,
+      "area-cons-2": Number(property.area_cons) || 0,
+
+      // Habitaciones
+      "bedrooms-2": Number(property.bedrooms) || 0,
+      "bathrooms-2": Number(property.bathrooms) || 0,
+
+      // Parqueaderos
+      "parking-2": Number(property.parking) || 0,
+      "parking-covered-2": Number(property.parking_covered) || 0,
+
+      // Switches
+      "vip-2": Boolean(property.vip),
+
+      video: Boolean(
+        property.video &&
+        String(property.video).trim() !== ""
+      ),
+
+      "tour-3d": Boolean(
+        property.tour3d &&
+        String(property.tour3d).trim() !== ""
+      ),
+
+      // Gallery JSON
+      "gallery-json": property.images
+        ? JSON.stringify(
+            property.images.map(img => ({
+              url: img.imageurl,
+              thumb: img.thumburl,
+              order: img.order
+            }))
+          )
+        : existing?.fieldData?.["gallery-json"] || "[]",
+
+      // Amenities JSON
+      "amenities-json": property.amenities
+        ? JSON.stringify(
+            property.amenities.map(a => a.name)
+          )
+        : existing?.fieldData?.["amenities-json"] || "[]"
+    }
+  };
 }
 
 // ─────────────────────────────────────────────
