@@ -127,6 +127,10 @@ function mapPropertyToWebflow(property, existing = null) {
     .replace(/\s+/g, "-")
     .replace(/[^a-z0-9-]/g, "");
 
+  const hasImages =
+    Array.isArray(property.images) &&
+    property.images.length > 0;
+
   return {
     fieldData: {
       name,
@@ -223,14 +227,12 @@ function mapPropertyToWebflow(property, existing = null) {
       ),
 
       // Gallery JSON
-      "gallery-json": property.images
-        ? JSON.stringify(
-            property.images.map(img => ({
-              url: img.imageurl,
-              thumb: img.thumburl,
-              order: img.order
-            }))
-          )
+      "gallery-json": hasImages
+        ? JSON.stringify(property.images.map(img => ({
+            url: img.imageurl,
+            thumb: img.thumburl,
+            order: img.order
+          })))
         : existing?.fieldData?.["gallery-json"] || "[]",
 
       // Amenities JSON
@@ -270,14 +272,10 @@ async function syncProperties(page = 1, webflowMap) {
     let fullProperty = property;
 
     const galleryEmpty =
-      !galleryJson ||
-      galleryJson.trim() === "" ||
-      galleryJson === "[]";
+      !property.images || property.images.length === 0;
 
     const amenitiesEmpty =
-      !amenitiesJson ||
-      amenitiesJson.trim() === "" ||
-      amenitiesJson === "[]";
+      !property.amenities || property.amenities.length === 0;
       
     const needsDetail =
       !existing ||
