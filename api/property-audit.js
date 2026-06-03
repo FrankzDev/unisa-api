@@ -136,6 +136,51 @@ export default async function handler(req, res) {
         COLLECTIONS.properties
       );
 
+    const emptyGallery = [];
+    const emptyAmenities = [];
+    const emptyCodpro = [];
+    const emptyUpdateOn = [];
+
+    // Auditoría de campos vacíos
+    for (const item of webflowItems) {
+      const fieldData = item.fieldData || {};
+
+      const codpro =
+        String(fieldData.codpro || "").trim();
+
+      if (!codpro) {
+        emptyCodpro.push(item.id);
+      }
+
+      const galleryValue =
+        fieldData["gallery-json"];
+
+      const amenitiesValue =
+        fieldData["amenities-json"];
+
+      if (
+        !galleryValue ||
+        galleryValue === "" ||
+        galleryValue === "[]" ||
+        galleryValue === "null"
+      ) {
+        emptyGallery.push(codpro);
+      }
+
+      if (
+        !amenitiesValue ||
+        amenitiesValue === "" ||
+        amenitiesValue === "[]" ||
+        amenitiesValue === "null"
+      ) {
+        emptyAmenities.push(codpro);
+      }
+
+      if (!fieldData["update-on"]) {
+        emptyUpdateOn.push(codpro);
+      }
+    }
+
     // Domus
     const allDomusProperties =
       await getAllDomusProperties();
@@ -143,13 +188,17 @@ export default async function handler(req, res) {
     // Sets
     const webflowCodes = new Set(
       webflowItems
-        .map(item => String(item.fieldData.codpro || "").trim())
+        .map(item =>
+          String(item.fieldData.codpro || "").trim()
+        )
         .filter(Boolean)
     );
 
     const domusCodes = new Set(
       allDomusProperties
-        .map(item => String(item.codpro || "").trim())
+        .map(item =>
+          String(item.codpro || "").trim()
+        )
         .filter(Boolean)
     );
 
@@ -202,11 +251,26 @@ export default async function handler(req, res) {
       duplicateCount:
         duplicateCodes.length,
 
+      emptyGalleryCount:
+        emptyGallery.length,
+
+      emptyAmenitiesCount:
+        emptyAmenities.length,
+
+      emptyCodproCount:
+        emptyCodpro.length,
+
+      emptyUpdateOnCount:
+        emptyUpdateOn.length,
+
       missingInDomus,
-
       missingInWebflow,
+      duplicateCodes,
 
-      duplicateCodes
+      emptyGallery,
+      emptyAmenities,
+      emptyCodpro,
+      emptyUpdateOn
     });
 
   } catch (err) {
