@@ -269,11 +269,21 @@ async function syncProperties(page = 1, webflowMap) {
 
     let fullProperty = property;
 
+    const galleryEmpty =
+      !galleryJson ||
+      galleryJson.trim() === "" ||
+      galleryJson === "[]";
+
+    const amenitiesEmpty =
+      !amenitiesJson ||
+      amenitiesJson.trim() === "" ||
+      amenitiesJson === "[]";
+      
     const needsDetail =
       !existing ||
       domusUpdated !== webflowUpdated ||
-      !existing?.fieldData?.["gallery-json"] ||
-      !existing?.fieldData?.["amenities-json"];
+      galleryEmpty ||
+      amenitiesEmpty;
 
     if (needsDetail) {
       const detail = await getPropertyDetail(property.codpro);
