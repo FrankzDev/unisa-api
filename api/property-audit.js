@@ -144,13 +144,18 @@ export default async function handler(req, res) {
     // Auditoría de campos vacíos
     for (const item of webflowItems) {
       const fieldData = item.fieldData || {};
+      const slug = fieldData.slug || "";
 
       const codpro =
         String(fieldData.codpro || "").trim();
 
-      if (!codpro) {
-        emptyCodpro.push(item.id);
-      }
+        if (!codpro) {
+            emptyCodpro.push({
+                id: item.id,
+                link: fieldData.slug ? `https://tu-dominio.com/${fieldData.slug}` : null
+            });
+            continue;
+            }
 
       const galleryValue =
         fieldData["gallery-json"];
@@ -164,7 +169,10 @@ export default async function handler(req, res) {
         galleryValue === "[]" ||
         galleryValue === "null"
       ) {
-        emptyGallery.push(codpro);
+        emptyGallery.push({
+            codpro,
+            link: slug ? `https://unisa-dev.webflow.io/${slug}` : null
+          });
       }
 
       if (
@@ -173,7 +181,10 @@ export default async function handler(req, res) {
         amenitiesValue === "[]" ||
         amenitiesValue === "null"
       ) {
-        emptyAmenities.push(codpro);
+        emptyAmenities.push({
+            codpro,
+            link: slug ? `https://tu-dominio.com/${slug}` : null
+          });
       }
 
       if (!fieldData["update-on"]) {
