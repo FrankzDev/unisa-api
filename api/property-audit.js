@@ -171,7 +171,7 @@ export default async function handler(req, res) {
       ) {
         emptyGallery.push({
             codpro,
-            link: slug ? `https://unisa-dev.webflow.io/${slug}` : null
+            link: slug ? `https://unisa-dev.webflow.io/properties/${slug}` : null
           });
       }
 
@@ -183,7 +183,7 @@ export default async function handler(req, res) {
       ) {
         emptyAmenities.push({
             codpro,
-            link: slug ? `https://tu-dominio.com/${slug}` : null
+            link: slug ? `https://unisa-dev.webflow.io/properties/${slug}` : null
           });
       }
 
