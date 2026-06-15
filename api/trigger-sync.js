@@ -3,8 +3,18 @@ const ADMIN_PASS = process.env.ADMIN_PASS;
 const GITHUB_PAT = process.env.GITHUB_PAT;
 const GITHUB_REPO = process.env.GITHUB_REPO;
 
+const ALLOWED_ORIGINS = [
+  "https://unisa-dev.webflow.io",
+  "https://www.unisa.com.co"
+];
+
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", process.env.WEBFLOW_URL);
+  const origin = req.headers.origin;
+
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
@@ -17,12 +27,10 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "Invalid credentials" });
   }
 
-  // Solo validar credenciales (usado en el login)
   if (checkOnly) {
     return res.status(200).json({ ok: true, authorized: true });
   }
 
-  // Disparar el workflow
   const response = await fetch(
     `https://api.github.com/repos/${GITHUB_REPO}/actions/workflows/property-sync.yml/dispatches`,
     {
