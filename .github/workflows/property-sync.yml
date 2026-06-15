@@ -1,0 +1,118 @@
+name: Property Sync
+
+on:
+  schedule:
+    # Runs at 07:00 UTC = 02:00 Colombia (UTC-5)
+    - cron: '0 7 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  sync:
+    name: Run Property Sync
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 1 · Property Audit
+        id: audit
+        run: |
+          echo "Running property audit..."
+          RESPONSE=$(curl -s \
+            "${{ secrets.API_BASE_URL }}/api/property-audit?secret=${{ secrets.SYNC_SECRET }}")
+          echo "Response: $RESPONSE"
+
+          HTTP_STATUS=$(echo "$RESPONSE" | jq -r '.status // "ok"')
+          if [ $? -ne 0 ]; then
+            echo "❌ Audit request failed"
+            exit 1
+          fi
+
+          WEBFLOW_COUNT=$(echo "$RESPONSE" | jq -r '.webflowCount // 0')
+          DOMUS_COUNT=$(echo "$RESPONSE"   | jq -r '.domusCount // 0')
+          MISSING_DOMUS=$(echo "$RESPONSE" | jq -r '.missingInDomusCount // 0')
+          MISSING_WF=$(echo "$RESPONSE"    | jq -r '.missingInWebflowCount // 0')
+
+          echo "Webflow: $WEBFLOW_COUNT | Domus: $DOMUS_COUNT"
+          echo "Missing in Domus: $MISSING_DOMUS | Missing in Webflow: $MISSING_WF"
+
+          echo "webflow_count=$WEBFLOW_COUNT"   >> $GITHUB_OUTPUT
+          echo "domus_count=$DOMUS_COUNT"       >> $GITHUB_OUTPUT
+          echo "missing_domus=$MISSING_DOMUS"   >> $GITHUB_OUTPUT
+          echo "missing_wf=$MISSING_WF"         >> $GITHUB_OUTPUT
+
+          # Early exit if everything is in sync
+          if [ "$WEBFLOW_COUNT" = "$DOMUS_COUNT" ] && \
+             [ "$MISSING_DOMUS" = "0" ] && \
+             [ "$MISSING_WF" = "0" ]; then
+            echo "already_synced=true" >> $GITHUB_OUTPUT
+            echo "✅ Everything is already up to date — skipping sync"
+          else
+            echo "already_synced=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Out of sync — proceeding with sync"
+          fi
+
+      - name: ⏭️ Skip notice
+        if: steps.audit.outputs.already_synced == 'true'
+        run: |
+          echo "============================================"
+          echo "  ✅ Properties are already up to date!"
+          echo "  Webflow: ${{ steps.audit.outputs.webflow_count }} properties"
+          echo "  Domus:   ${{ steps.audit.outputs.domus_count }} properties"
+          echo "  No sync needed — exiting cleanly 🎉"
+          echo "============================================"
+
+      - name: 2 · Initial Sync (Page 1 — get total pages)
+        id: first_sync
+        if: steps.audit.outputs.already_synced == 'false'
+        run: |
+          echo "Running initial sync to get total pages..."
+          RESPONSE=$(curl -s \
+            "${{ secrets.API_BASE_URL }}/api/sync?target=properties&page=1&secret=${{ secrets.SYNC_SECRET }}")
+          echo "Response: $RESPONSE"
+
+          TOTAL_PAGES=$(echo "$RESPONSE" | jq -r '.totalPages // 1')
+          echo "Total pages: $TOTAL_PAGES"
+          echo "total_pages=$TOTAL_PAGES" >> $GITHUB_OUTPUT
+
+      - name: 3 · Sync remaining pages
+        if: steps.audit.outputs.already_synced == 'false'
+        run: |
+          TOTAL_PAGES=${{ steps.first_sync.outputs.total_pages }}
+          echo "Syncing pages 2 to $TOTAL_PAGES..."
+
+          for PAGE in $(seq 2 $TOTAL_PAGES); do
+            echo "Syncing page $PAGE / $TOTAL_PAGES..."
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              "${{ secrets.API_BASE_URL }}/api/sync?target=properties&page=$PAGE&secret=${{ secrets.SYNC_SECRET }}")
+            echo "  Page $PAGE → HTTP $STATUS"
+            if [ "$STATUS" != "200" ]; then
+              echo "❌ Sync failed on page $PAGE with status $STATUS"
+              exit 1
+            fi
+            sleep 1
+          done
+
+          echo "✅ All $TOTAL_PAGES pages synced"
+
+      - name: 4 · Property Cleanup
+        if: steps.audit.outputs.already_synced == 'false'
+        run: |
+          echo "Running property cleanup..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.API_BASE_URL }}/api/property-cleanup?execute=true&secret=${{ secrets.SYNC_SECRET }}")
+          echo "Status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ Cleanup failed with status $STATUS"
+            exit 1
+          fi
+          echo "✅ Cleanup completed"
+
+      - name: ✅ Sync Summary
+        if: steps.audit.outputs.already_synced == 'false'
+        run: |
+          echo "============================================"
+          echo "  Property sync completed successfully"
+          echo "  Total pages synced: ${{ steps.first_sync.outputs.total_pages }}"
+          echo "  Webflow: ${{ steps.audit.outputs.webflow_count }} properties"
+          echo "  Domus:   ${{ steps.audit.outputs.domus_count }} properties"
+          echo "============================================"
