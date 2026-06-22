@@ -121,11 +121,11 @@ function mapPropertyToWebflow(property, existing = null) {
   const name = `${type} en ${biz} - ${neighborhood}, ${city}`.trim();
 
   const slug = `${name}-${property.codpro}`
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "");
+  .toLowerCase()
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "")
+  .replace(/[^a-z0-9]+/g, "-")
+  .replace(/^-|-$/g, "");
 
   const hasImages =
     Array.isArray(property.images) &&
