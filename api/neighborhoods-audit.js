@@ -87,7 +87,7 @@ async function getDomusNeighborhoods() {
 function normalizeCode(value) {
   return String(value ?? "")
     .trim()
-    .replace(/^0+/, ""); // evita diferencias tipo "001" vs "1"
+    .replace(/^0+/, ""); 
 }
 
 // ─────────────────────────────
