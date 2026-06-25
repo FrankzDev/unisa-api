@@ -61,8 +61,54 @@ async function getAllWebflowItems(collectionId) {
   return items;
 }
 
+// ---------------------------------------------
+// HELPERS
+// ---------------------------------------------
+function createSlug(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+// --------------------------------------------
+// DOMUS TYPES
+// --------------------------------------------
+async function getDomusTypes() {
+  const res = await fetch(
+    `${process.env.BASE_URL}/api/types`
+  );
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch types");
+  }
+
+  const json = await res.json();
+
+  return json.data || [];
+}
+
+// --------------------------------------------
+// DOMUS TYPES
+// --------------------------------------------
+async function getDomusNeighborhoods() {
+  const res = await fetch(
+    `${process.env.BASE_URL}/api/neighborhoods`
+  );
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch neighborhoods");
+  }
+
+  const json = await res.json();
+
+  return json.data || [];
+}
+
 // ─────────────────────────────────────────────
-// DOMUS LIST
+// DOMUS PROPERTY LIST
 // ─────────────────────────────────────────────
 
 async function getDomusPropertiesByPage(page) {
@@ -246,6 +292,147 @@ function mapPropertyToWebflow(property, existing = null) {
 }
 
 // ─────────────────────────────────────────────
+// SYNC TYPES
+// ─────────────────────────────────────────────
+async function syncTypes() {
+  const domusTypes =
+    await getDomusTypes();
+
+  const webflowItems =
+    await getAllWebflowItems(
+      COLLECTIONS.types
+    );
+
+  const webflowMap = new Map(
+    webflowItems.map(item => [
+      String(item.fieldData.code),
+      item
+    ])
+  );
+
+  let created = 0;
+  let updated = 0;
+
+  for (const type of domusTypes) {
+    const code = String(type.code);
+
+    const mapped = {
+      fieldData: {
+        name: type.name,
+        slug: createSlug(
+          `${type.name}-${type.code}`
+        ),
+        code
+      }
+    };
+
+    const existing =
+      webflowMap.get(code);
+
+    if (!existing) {
+      await webflowRequest(
+        "POST",
+        `/collections/${COLLECTIONS.types}/items`,
+        mapped
+      );
+
+      created++;
+    } else {
+      await webflowRequest(
+        "PATCH",
+        `/collections/${COLLECTIONS.types}/items/${existing.id}`,
+        mapped
+      );
+
+      updated++;
+    }
+  }
+
+  return {
+    created,
+    updated,
+    total: domusTypes.length
+  };
+}
+
+// ─────────────────────────────────────────────
+// SYNC NEIGHBORHOODS
+// ─────────────────────────────────────────────
+async function syncNeighborhoods() {
+  const domusNeighborhoods =
+    await getDomusNeighborhoods();
+
+  const webflowItems =
+    await getAllWebflowItems(
+      COLLECTIONS.neighborhoods
+    );
+
+  const webflowMap = new Map(
+    webflowItems.map(item => [
+      String(item.fieldData.code),
+      item
+    ])
+  );
+
+  let created = 0;
+  let updated = 0;
+
+  for (const neighborhood of domusNeighborhoods) {
+    const code =
+      String(neighborhood.code);
+
+    const mapped = {
+      fieldData: {
+        name: neighborhood.name,
+
+        slug: createSlug(
+          `${neighborhood.name}-${neighborhood.city_code}-${neighborhood.code}`
+        ),
+
+        code,
+
+        "city-name":
+          neighborhood.city_name?.trim() ||
+          "",
+
+        "city-code":
+          String(
+            neighborhood.city_code || ""
+          )
+      }
+    };
+
+    const existing =
+      webflowMap.get(code);
+
+    if (!existing) {
+      await webflowRequest(
+        "POST",
+        `/collections/${COLLECTIONS.neighborhoods}/items`,
+        mapped
+      );
+
+      created++;
+    } else {
+      await webflowRequest(
+        "PATCH",
+        `/collections/${COLLECTIONS.neighborhoods}/items/${existing.id}`,
+        mapped
+      );
+
+      updated++;
+    }
+  }
+
+  return {
+    created,
+    updated,
+    total:
+      domusNeighborhoods.length
+  };
+}
+
+// ─────────────────────────────────────────────
 // SYNC PROPERTIES
 // ─────────────────────────────────────────────
 
@@ -332,12 +519,19 @@ export default async function handler(req, res) {
     req.query.secret;
 
   if (secret !== process.env.SYNC_SECRET) {
-    return res.status(401).json({ error: "Unauthorized" });
+    return res.status(401).json({
+      error: "Unauthorized"
+    });
   }
 
   const { target, page = 1 } = req.query;
 
   try {
+
+    // ─────────────────────────────
+    // PROPERTIES
+    // ─────────────────────────────
+
     if (target === "properties") {
       const webflowItems =
         await getAllWebflowItems(
@@ -351,16 +545,60 @@ export default async function handler(req, res) {
         ])
       );
 
-      const result = await syncProperties(
-        Number(page),
-        webflowMap
-      );
+      const result =
+        await syncProperties(
+          Number(page),
+          webflowMap
+        );
 
-      return res.json({ ok: true, ...result });
+      return res.json({
+        ok: true,
+        target,
+        ...result
+      });
     }
 
+    // ─────────────────────────────
+    // TYPES
+    // ─────────────────────────────
+
+    if (target === "types") {
+      const result =
+        await syncTypes();
+
+      return res.json({
+        ok: true,
+        target,
+        ...result
+      });
+    }
+
+    // ─────────────────────────────
+    // NEIGHBORHOODS
+    // ─────────────────────────────
+
+    if (target === "neighborhoods") {
+      const result =
+        await syncNeighborhoods();
+
+      return res.json({
+        ok: true,
+        target,
+        ...result
+      });
+    }
+
+    // ─────────────────────────────
+    // INVALID TARGET
+    // ─────────────────────────────
+
     return res.status(400).json({
-      error: "Invalid target"
+      error: "Invalid target",
+      availableTargets: [
+        "properties",
+        "types",
+        "neighborhoods"
+      ]
     });
 
   } catch (err) {
