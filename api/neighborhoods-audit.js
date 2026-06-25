@@ -1,8 +1,7 @@
 import "dotenv/config";
+import { getAllWebflowItems } from "@/lib/webflow";
 
 const WEBFLOW_API_TOKEN = process.env.WEBFLOW_API_TOKEN;
-
-const WEBFLOW_BASE_URL = "https://api.webflow.com/v2";
 
 const DOMUS_BASE_URL = process.env.DOMUS_BASE_URL;
 const DOMUS_API_KEY = process.env.DOMUS_API_KEY;
@@ -12,13 +11,7 @@ const COLLECTIONS = {
 };
 
 // ─────────────────────────────
-// WEBFLOW (asumes reutilizado)
-// webflowRequest()
-// getAllWebflowItems()
-// ─────────────────────────────
-
-// ─────────────────────────────
-// DOMUS (FIXED)
+// DOMUS
 // ─────────────────────────────
 
 async function getDomusNeighborhoods() {
