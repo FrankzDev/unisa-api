@@ -78,32 +78,44 @@ function createSlug(value) {
 // --------------------------------------------
 async function getDomusTypes() {
   const res = await fetch(
-    `${process.env.BASE_URL}/api/types`
+    `${process.env.DOMUS_BASE_URL}/search/types`,
+    {
+      headers: {
+        Authorization: process.env.DOMUS_API_KEY,
+        inmobiliaria: String(INMOBILIARIA),
+      },
+    }
   );
 
   if (!res.ok) {
-    throw new Error("Failed to fetch types");
+    const text = await res.text();
+    throw new Error(`Failed to fetch types: ${text}`);
   }
 
   const json = await res.json();
-
   return json.data || [];
 }
 
 // --------------------------------------------
-// DOMUS TYPES
+// DOMUS NEIGHBORHOODS
 // --------------------------------------------
 async function getDomusNeighborhoods() {
   const res = await fetch(
-    `${process.env.BASE_URL}/api/neighborhoods`
+    `${process.env.DOMUS_BASE_URL}/search/neighborhoods`,
+    {
+      headers: {
+        Authorization: process.env.DOMUS_API_KEY,
+        inmobiliaria: String(INMOBILIARIA),
+      },
+    }
   );
 
   if (!res.ok) {
-    throw new Error("Failed to fetch neighborhoods");
+    const text = await res.text();
+    throw new Error(`Failed to fetch neighborhoods: ${text}`);
   }
 
   const json = await res.json();
-
   return json.data || [];
 }
 
