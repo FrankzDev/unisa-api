@@ -1,7 +1,8 @@
 import "dotenv/config";
-import { getAllWebflowItems } from "@/lib/webflow";
 
 const WEBFLOW_API_TOKEN = process.env.WEBFLOW_API_TOKEN;
+
+const WEBFLOW_BASE_URL = "https://api.webflow.com/v2";
 
 const DOMUS_BASE_URL = process.env.DOMUS_BASE_URL;
 const DOMUS_API_KEY = process.env.DOMUS_API_KEY;
@@ -9,6 +10,48 @@ const DOMUS_API_KEY = process.env.DOMUS_API_KEY;
 const COLLECTIONS = {
   neighborhoods: "69fb62f288a1071da3961042",
 };
+
+// ─────────────────────────────
+// WEBFLOW (LOCAL - FIX)
+// ─────────────────────────────
+
+async function webflowRequest(method, path) {
+  const res = await fetch(`${WEBFLOW_BASE_URL}${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${WEBFLOW_API_TOKEN}`,
+      "Content-Type": "application/json",
+      "accept-version": "2.0.0",
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  return res.json();
+}
+
+async function getAllWebflowItems(collectionId) {
+  let items = [];
+  let offset = 0;
+  const limit = 100;
+
+  while (true) {
+    const data = await webflowRequest(
+      "GET",
+      `/collections/${collectionId}/items?limit=${limit}&offset=${offset}`
+    );
+
+    items.push(...(data.items || []));
+
+    if (items.length >= data.pagination.total) break;
+
+    offset += limit;
+  }
+
+  return items;
+}
 
 // ─────────────────────────────
 // DOMUS
@@ -30,7 +73,8 @@ async function getDomusNeighborhoods() {
   );
 
   if (!res.ok) {
-    throw new Error("Failed to fetch neighborhoods from Domus");
+    const text = await res.text();
+    throw new Error(`Failed to fetch neighborhoods from Domus: ${text}`);
   }
 
   const json = await res.json();
